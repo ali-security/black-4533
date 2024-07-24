@@ -40,6 +40,7 @@ from pathspec import PathSpec
 import black
 import black.files
 from black import Feature, TargetVersion
+from black.strings import lines_with_leading_tabs_expanded
 from black import re_compile_maybe_verbose as compile_pattern
 from black.cache import get_cache_dir, get_cache_file
 from black.debug import DebugVisitor
@@ -1825,6 +1826,17 @@ class BlackTestCase(BlackBaseTestCase):
         err.match(r"\(<unknown>, line 1\)")
 
 
+
+    def test_lines_with_leading_tabs_expanded(self) -> None:
+        # See CVE-2024-21503. Mostly test that this completes in a reasonable
+        # time.
+        payload = "\t" * 10_000
+        assert lines_with_leading_tabs_expanded(payload) == [payload]
+
+        tab = " " * 8
+        assert lines_with_leading_tabs_expanded("\tx") == [f"{tab}x"]
+        assert lines_with_leading_tabs_expanded("\t\tx") == [f"{tab}{tab}x"]
+        assert lines_with_leading_tabs_expanded("\tx\n  y") == [f"{tab}x", "  y"]
 class TestCaching:
     def test_get_cache_dir(
         self,
